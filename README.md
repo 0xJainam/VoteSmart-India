@@ -2,6 +2,8 @@
 
 > **PromptWars Hackathon Entry** | Next.js 15 Static Export · Gemini 2.0 Flash · Google Maps · Firebase Hosting
 
+🌐 **Live Demo:** [https://votesmart-india-78563.web.app](https://votesmart-india-78563.web.app)
+
 ---
 
 ## 🎯 Problem Statement
@@ -65,11 +67,12 @@ This app is a **fully static Next.js export** — no server required. It deploys
 - **Instant deploys** — `firebase deploy` pushes pre-built HTML
 - **No cold starts** — Everything is pre-rendered
 
-## 🔐 Security
+## 🔐 Security & Reliability
 
-- **Input sanitization** — 6-stage pipeline (HTML strip, entity decode, control chars, injection patterns, whitespace collapse, length limit) runs client-side before every AI call
-- **Prompt injection defense** — Known LLM attack patterns stripped before reaching Gemini
-- **API key restriction** — Restrict `NEXT_PUBLIC_` keys to your domain in Google Cloud Console
+- **Input sanitization** — 6-stage pipeline (HTML strip, entity decode, control chars, injection patterns, whitespace collapse, length limit) runs client-side before every AI call.
+- **Prompt injection defense** — Known LLM attack patterns stripped before reaching Gemini.
+- **API key restriction** — Restrict `NEXT_PUBLIC_` keys to your domain in Google Cloud Console.
+- **Resilient AI Calling** — Built-in exponential backoff for 429 rate limits, UI button throttling, and history array safety nets ensure robust performance even on the free Gemini tier.
 
 ## ♿ Accessibility
 

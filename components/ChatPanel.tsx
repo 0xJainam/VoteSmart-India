@@ -36,6 +36,9 @@ function t(text: TranslatedText, lang: SupportedLanguage): string {
   return text[lang] || text.en;
 }
 
+// DEBUG: Verify API key is loaded at build time (remove before production)
+console.log("API Key exists:", !!process.env.NEXT_PUBLIC_GEMINI_API_KEY);
+
 /** Lazily initialised Gemini client (singleton) */
 let genAI: GoogleGenerativeAI | null = null;
 function getGenAI(): GoogleGenerativeAI {
@@ -51,7 +54,7 @@ export default function ChatPanel({ currentStep, language }: ChatPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
-      id: msgId(),
+      id: "greeting",
       role: "assistant",
       content: t(UI_LABELS.chat_greeting, language),
       timestamp: new Date().toISOString(),
@@ -59,24 +62,20 @@ export default function ChatPanel({ currentStep, language }: ChatPanelProps) {
   ]);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [cooldown, setCooldown] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Update greeting when language changes
   useEffect(() => {
-    setMessages((prev) => {
-      // Only update if we still have just the initial greeting message
-      if (prev.length === 1 && prev[0].role === "assistant") {
-        return [
-          {
-            ...prev[0],
-            content: t(UI_LABELS.chat_greeting, language),
-          },
-        ];
-      }
-      return prev;
-    });
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.id === "greeting"
+          ? { ...m, content: t(UI_LABELS.chat_greeting, language) }
+          : m
+      )
+    );
   }, [language]);
 
   // Auto-scroll to latest message
@@ -93,7 +92,7 @@ export default function ChatPanel({ currentStep, language }: ChatPanelProps) {
 
   const sendMessage = useCallback(async () => {
     const trimmed = input.trim();
-    if (!trimmed || isLoading) return;
+    if (!trimmed || isLoading || cooldown) return;
 
     const userMessage: ChatMessage = {
       id: msgId(),
@@ -106,21 +105,31 @@ export default function ChatPanel({ currentStep, language }: ChatPanelProps) {
     setInput("");
     setIsLoading(true);
 
+    // 3-second cooldown to prevent rapid clicks
+    setCooldown(true);
+    setTimeout(() => setCooldown(false), 3000);
+
     try {
       // Sanitize input client-side
       const sanitized = sanitizeInput(trimmed);
       if (!sanitized) throw new Error("Message was empty after sanitization.");
 
-      // Build conversation history for context
-      const history = messages
-        .filter((m) => m.role !== "system")
+      // Build conversation history — exclude the UI greeting
+      // so the first entry is always role 'user' (Gemini SDK requirement)
+      let history = messages
+        .filter((m) => m.id !== "greeting" && m.role !== "system")
         .slice(-10)
         .map((m) => ({
           role: m.role === "assistant" ? "model" as const : "user" as const,
           parts: [{ text: m.content }],
         }));
 
-      // Call Gemini SDK directly
+      // Safety net: drop any leading 'model' entries
+      while (history.length > 0 && history[0].role === "model") {
+        history = history.slice(1);
+      }
+
+      // Build the model instance
       const model = getGenAI().getGenerativeModel({
         model: GEMINI_MODEL,
         systemInstruction: getSystemPrompt(currentStep, language),
@@ -131,9 +140,26 @@ export default function ChatPanel({ currentStep, language }: ChatPanelProps) {
         },
       });
 
-      const chat = model.startChat({ history });
-      const result = await chat.sendMessage(sanitized);
-      const rawText = result.response.text();
+      // Exponential backoff: try up to 2 attempts on 429
+      let rawText = "";
+      for (let attempt = 1; attempt <= 2; attempt++) {
+        try {
+          const chat = model.startChat({ history });
+          const result = await chat.sendMessage(sanitized);
+          rawText = result.response.text();
+          break; // Success — exit retry loop
+        } catch (err) {
+          const is429 = err instanceof Error && err.message.includes("429");
+          if (is429 && attempt < 2) {
+            // Wait 2^attempt seconds before retry (2s, then 4s)
+            const waitMs = 2000 * Math.pow(2, attempt - 1);
+            console.warn(`[ChatPanel] 429 rate limit hit. Retrying in ${waitMs}ms (attempt ${attempt}/2)`);
+            await new Promise((r) => setTimeout(r, waitMs));
+            continue;
+          }
+          throw err; // Not a 429 or final attempt — propagate
+        }
+      }
 
       // Parse structured JSON response
       let data: GeminiResponse;
@@ -147,7 +173,6 @@ export default function ChatPanel({ currentStep, language }: ChatPanelProps) {
             : [],
         };
       } catch {
-        // If not valid JSON, use raw text
         data = { text: rawText || "I could not process that request.", action: null, checklist: [] };
       }
 
@@ -162,9 +187,11 @@ export default function ChatPanel({ currentStep, language }: ChatPanelProps) {
 
       setMessages((prev) => [...prev, assistantMessage]);
     } catch (error) {
+      console.error("[ChatPanel] Gemini SDK error:", error);
+
       const errorMsg =
         error instanceof Error && error.message.includes("429")
-          ? "VoteSmart is taking a quick breather. Please wait a moment!"
+          ? "VoteSmart hit its rate limit. Please wait ~30 seconds and try again."
           : error instanceof Error
             ? error.message
             : "An unexpected error occurred";
@@ -180,7 +207,7 @@ export default function ChatPanel({ currentStep, language }: ChatPanelProps) {
     } finally {
       setIsLoading(false);
     }
-  }, [input, isLoading, messages, currentStep, language]);
+  }, [input, isLoading, cooldown, messages, currentStep, language]);
 
   const handleKeyDown = useCallback(
     (e: React.KeyboardEvent) => {
@@ -316,13 +343,13 @@ export default function ChatPanel({ currentStep, language }: ChatPanelProps) {
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder="Ask about the election process..."
-                disabled={isLoading}
+                disabled={isLoading || cooldown}
                 className="flex-1 bg-navy-900 border border-navy-600 rounded-xl px-4 py-2.5 text-sm text-ivory-50 placeholder:text-ivory-500 focus-ring disabled:opacity-50 transition-colors"
                 autoComplete="off"
               />
               <button
                 onClick={sendMessage}
-                disabled={isLoading || !input.trim()}
+                disabled={isLoading || cooldown || !input.trim()}
                 className="w-10 h-10 bg-saffron-500 hover:bg-saffron-600 disabled:bg-navy-700 disabled:text-ivory-500 text-navy-900 rounded-xl flex items-center justify-center transition-all focus-ring disabled:cursor-not-allowed"
                 aria-label="Send message"
               >

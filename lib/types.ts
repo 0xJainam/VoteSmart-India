@@ -67,27 +67,3 @@ export interface GeminiResponse {
   checklist: string[];
 }
 
-/** POST body for /api/chat */
-export interface ChatRequest {
-  message: string;
-  currentStepId: ElectionStepId;
-  history: Pick<ChatMessage, "role" | "content">[];
-  language: SupportedLanguage;
-}
-
-/** POST body for /api/translate */
-export interface TranslateRequest {
-  texts: string[];
-  targetLang: SupportedLanguage;
-}
-
-/** Response from /api/translate */
-export interface TranslateResponse {
-  translations: string[];
-}
-
-/** Standard API error */
-export interface ApiError {
-  code: string;
-  message: string;
-}
