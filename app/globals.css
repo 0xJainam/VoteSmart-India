@@ -1,0 +1,129 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ==========================================================================
+   Global Design Tokens & Custom Properties
+   ========================================================================== */
+
+@layer base {
+  :root {
+    --scrollbar-thumb: #506ba8;
+    --scrollbar-track: #0c1b33;
+  }
+
+  /* Smooth scrolling for anchor links (respects prefers-reduced-motion) */
+  html {
+    scroll-behavior: smooth;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Base body styling */
+  body {
+    @apply bg-navy-950 text-ivory-50 font-body antialiased;
+  }
+}
+
+/* ==========================================================================
+   Accessibility: High-Contrast Focus Rings
+   --------------------------------------------------------------------------
+   Using :focus-visible (not :focus) so mouse clicks don't show rings,
+   but keyboard Tab navigation gets a clear, high-contrast indicator.
+   WCAG 2.2 requires focus indicators with ≥ 3:1 contrast.
+   Saffron-400 (#FFB347) on Navy-900 (#0C1B33) = 8.7:1 — well above minimum.
+   ========================================================================== */
+
+@layer components {
+  /* Default focus ring for all interactive elements */
+  .focus-ring {
+    @apply outline-none;
+  }
+
+  .focus-ring:focus-visible {
+    @apply ring-2 ring-saffron-400 ring-offset-2 ring-offset-navy-900;
+  }
+}
+
+/* ==========================================================================
+   Custom Scrollbar (Webkit + Firefox)
+   --------------------------------------------------------------------------
+   Thin, dark scrollbar that blends with the navy background.
+   Falls back gracefully in browsers that don't support these properties.
+   ========================================================================== */
+
+@layer utilities {
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--scrollbar-thumb) var(--scrollbar-track);
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 3px;
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb:hover {
+    background: #7189bc;
+  }
+
+  /* Hide scrollbar visually but keep scrolling (for chat panel) */
+  .scrollbar-none {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ==========================================================================
+   Animated Gradient Background (Hero Section)
+   ========================================================================== */
+
+@layer utilities {
+  .gradient-hero {
+    background: linear-gradient(
+      135deg,
+      #0c1b33 0%,
+      #162447 25%,
+      #1f3461 50%,
+      #162447 75%,
+      #0c1b33 100%
+    );
+    background-size: 200% 200%;
+    animation: gradientShift 8s ease infinite;
+  }
+
+  @keyframes gradientShift {
+    0%,
+    100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+}
