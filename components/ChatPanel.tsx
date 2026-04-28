@@ -1,23 +1,24 @@
 "use client";
 
 // =============================================================================
-// components/ChatPanel.tsx — AI Chat Interface
+// components/ChatPanel.tsx — AI Chat Interface (Client-side Gemini SDK)
 // =============================================================================
-// CRITICAL A11y: aria-live="polite" on the message container ensures screen
-// readers announce new AI messages without interrupting the user.
-// Handles structured GeminiResponse actions (show_map, show_voter_id_checklist).
+// Uses @google/generative-ai SDK directly from the browser for static export.
+// System prompts are injected per-step via getSystemPrompt().
 // =============================================================================
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { GoogleGenerativeAI } from "@google/generative-ai";
 import { Send, MessageCircle, X, Loader, Check } from "./Icons";
 import MapEmbed from "./MapEmbed";
-import { UI_LABELS } from "@/lib/constants";
+import { UI_LABELS, GEMINI_MODEL } from "@/lib/constants";
+import { getSystemPrompt } from "@/lib/prompts";
+import { sanitizeInput } from "@/lib/sanitize";
 import type {
   ChatMessage,
   ElectionStepId,
   SupportedLanguage,
   GeminiResponse,
-  ApiError,
   TranslatedText,
 } from "@/lib/types";
 
@@ -33,6 +34,17 @@ function msgId(): string {
 
 function t(text: TranslatedText, lang: SupportedLanguage): string {
   return text[lang] || text.en;
+}
+
+/** Lazily initialised Gemini client (singleton) */
+let genAI: GoogleGenerativeAI | null = null;
+function getGenAI(): GoogleGenerativeAI {
+  if (!genAI) {
+    const key = process.env.NEXT_PUBLIC_GEMINI_API_KEY ?? "";
+    if (!key) throw new Error("Gemini API key is not configured. Set NEXT_PUBLIC_GEMINI_API_KEY in .env");
+    genAI = new GoogleGenerativeAI(key);
+  }
+  return genAI;
 }
 
 export default function ChatPanel({ currentStep, language }: ChatPanelProps) {
@@ -95,31 +107,49 @@ export default function ChatPanel({ currentStep, language }: ChatPanelProps) {
     setIsLoading(true);
 
     try {
+      // Sanitize input client-side
+      const sanitized = sanitizeInput(trimmed);
+      if (!sanitized) throw new Error("Message was empty after sanitization.");
+
+      // Build conversation history for context
       const history = messages
         .filter((m) => m.role !== "system")
         .slice(-10)
-        .map((m) => ({ role: m.role, content: m.content }));
+        .map((m) => ({
+          role: m.role === "assistant" ? "model" as const : "user" as const,
+          parts: [{ text: m.content }],
+        }));
 
-      const res = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: trimmed,
-          currentStepId: currentStep,
-          history,
-          language,
-        }),
+      // Call Gemini SDK directly
+      const model = getGenAI().getGenerativeModel({
+        model: GEMINI_MODEL,
+        systemInstruction: getSystemPrompt(currentStep, language),
+        generationConfig: {
+          responseMimeType: "application/json",
+          temperature: 0.7,
+          maxOutputTokens: 1024,
+        },
       });
 
-      if (!res.ok) {
-        const err: ApiError = await res.json().catch(() => ({
-          code: "UNKNOWN",
-          message: "Something went wrong. Please try again.",
-        }));
-        throw new Error(err.message);
-      }
+      const chat = model.startChat({ history });
+      const result = await chat.sendMessage(sanitized);
+      const rawText = result.response.text();
 
-      const data: GeminiResponse = await res.json();
+      // Parse structured JSON response
+      let data: GeminiResponse;
+      try {
+        const parsed = JSON.parse(rawText) as Partial<GeminiResponse>;
+        data = {
+          text: typeof parsed.text === "string" && parsed.text.trim() ? parsed.text : rawText,
+          action: parsed.action ?? null,
+          checklist: Array.isArray(parsed.checklist)
+            ? parsed.checklist.filter((i): i is string => typeof i === "string").slice(0, 10)
+            : [],
+        };
+      } catch {
+        // If not valid JSON, use raw text
+        data = { text: rawText || "I could not process that request.", action: null, checklist: [] };
+      }
 
       const assistantMessage: ChatMessage = {
         id: msgId(),
@@ -134,7 +164,7 @@ export default function ChatPanel({ currentStep, language }: ChatPanelProps) {
     } catch (error) {
       const errorMsg =
         error instanceof Error && error.message.includes("429")
-          ? "VoteSmart is taking a quick breather to process election data. Please wait a moment!"
+          ? "VoteSmart is taking a quick breather. Please wait a moment!"
           : error instanceof Error
             ? error.message
             : "An unexpected error occurred";
