@@ -222,6 +222,16 @@ export const MAX_CHAT_HISTORY = 10;
 /** Gemini model to use — flash for speed and cost efficiency */
 export const GEMINI_MODEL = "gemini-2.0-flash";
 
+/** EVM Simulator Constants */
+export const EVM_VVPAT_TIMEOUT_MS = 800;
+export const EVM_VVPAT_DURATION_S = 7;
+export const EVM_EXP_REWARD = 100;
+export const EVM_VVPAT_COUNTDOWN_INTERVAL_MS = 1000;
+
+/** Chat Panel Constants */
+export const CHAT_COOLDOWN_MS = 3000;
+export const CHAT_RETRY_DELAY_MS = 2000;
+
 // Helper: creates a TranslatedText with English value (other langs fallback to en)
 function en(text: string): TranslatedText {
   return { en: text, hi: text, bn: text, mr: text, te: text };

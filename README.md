@@ -98,6 +98,8 @@ The application features a robust testing strategy using **Vitest** and **React 
 ## 🧹 Code Quality
 - **Strict TypeScript**: Zero implicit `any` types. All configurations and states are backed by strict interfaces (e.g. `UserState`, `Candidate`).
 - **JSDoc Documentation**: Comprehensive JSDoc block comments on all key components and utility functions for superior maintainability.
+- **Custom Hooks**: Complex state management for the EVM (`useEVM`) and Gemini Chat (`useChat`) is isolated into headless hooks to minimize cyclomatic complexity.
+- **Modular Components**: Large views like the `Dashboard` and `EVMSimulator` are split into atomic, single-responsibility child components.
 
 ## 📦 Setup
 
