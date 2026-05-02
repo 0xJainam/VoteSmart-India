@@ -89,7 +89,15 @@ This app is a **fully static Next.js export** — no server required. It deploys
 npm test
 ```
 
-Unit tests cover input sanitization (XSS, injection, length limits).
+The application features a robust testing strategy using **Vitest** and **React Testing Library**:
+- **EVMSimulator Tests**: Simulates mounting, voting, and verifying the VVPAT timeout animations and gamification rewards.
+- **ChatPanel Tests**: Verifies API resilience by mocking the Gemini SDK and asserting that rate limit errors (429s) are handled gracefully without application crashes.
+- **Sanitization Tests**: Unit tests cover input sanitization (XSS, injection, length limits).
+- **Automated CI**: A GitHub Actions workflow runs the test suite on every push to `main`.
+
+## 🧹 Code Quality
+- **Strict TypeScript**: Zero implicit `any` types. All configurations and states are backed by strict interfaces (e.g. `UserState`, `Candidate`).
+- **JSDoc Documentation**: Comprehensive JSDoc block comments on all key components and utility functions for superior maintainability.
 
 ## 📦 Setup
 

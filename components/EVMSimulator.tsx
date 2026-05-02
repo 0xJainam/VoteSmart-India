@@ -1,17 +1,8 @@
 import { useState, useCallback, useEffect } from "react";
 import { useUser } from "@/context/UserContext";
 import { Check } from "./Icons";
-import { UI_LABELS } from "@/lib/constants";
+import { UI_LABELS, CANDIDATES } from "@/lib/constants";
 import type { SupportedLanguage, TranslatedText } from "@/lib/types";
-
-/** Mock candidate data for the EVM */
-const CANDIDATES = [
-  { id: 1, name: "Candidate A", party: "National Progress Party", symbol: "🌻" },
-  { id: 2, name: "Candidate B", party: "People's Democratic Front", symbol: "🔔" },
-  { id: 3, name: "Candidate C", party: "United Citizens Alliance", symbol: "⭐" },
-  { id: 4, name: "Candidate D", party: "Independent", symbol: "🏛️" },
-  { id: 5, name: "NOTA", party: "None of the Above", symbol: "✖️" },
-];
 
 type SimState = "ready" | "pressed" | "vvpat" | "done";
 
@@ -20,10 +11,28 @@ interface EVMSimulatorProps {
   language?: SupportedLanguage;
 }
 
+/**
+ * Helper to get the translated string based on language.
+ *
+ * @param text - The TranslatedText object.
+ * @param lang - The currently selected language.
+ * @returns The translated string, falling back to English.
+ */
 function t(text: TranslatedText, lang: SupportedLanguage): string {
   return text[lang] || text.en;
 }
 
+/**
+ * EVMSimulator Component
+ *
+ * Provides a mock Electronic Voting Machine (EVM) for educational purposes.
+ * Users can simulate pressing a candidate button and verifying their vote via VVPAT.
+ *
+ * @param props - Component properties.
+ * @param props.onComplete - Optional callback invoked when voting is successful.
+ * @param props.language - The currently selected UI language.
+ * @returns React node representing the EVM simulator.
+ */
 export default function EVMSimulator({ onComplete, language = "en" }: EVMSimulatorProps) {
   const { addExp, awardBadge, setDigitalMark } = useUser();
   const [state, setState] = useState<SimState>("ready");

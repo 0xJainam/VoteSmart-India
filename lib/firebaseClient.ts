@@ -11,10 +11,21 @@ const firebaseConfig = {
   measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
 };
 
+/**
+ * Initializes and retrieves the Firebase Application instance.
+ * Ensures that Firebase is only initialized once.
+ *
+ * @returns The Firebase App instance.
+ */
 export function getFirebaseApp() {
   return getApps().length ? getApp() : initializeApp(firebaseConfig);
 }
 
+/**
+ * Retrieves the Firebase Authentication instance associated with the app.
+ *
+ * @returns The Firebase Auth instance.
+ */
 export function getFirebaseAuth() {
   return getAuth(getFirebaseApp());
 }

@@ -50,6 +50,18 @@ function getGenAI(): GoogleGenerativeAI {
   return genAI;
 }
 
+/**
+ * ChatPanel Component
+ *
+ * An interactive AI assistant interface powered by Google Gemini.
+ * It provides context-aware guidance based on the active election step
+ * and enforces local rate-limiting and error handling.
+ *
+ * @param props - Component properties.
+ * @param props.currentStep - The current active election step ID to provide context to the AI.
+ * @param props.language - The user's preferred language.
+ * @returns React node representing the chat interface.
+ */
 export default function ChatPanel({ currentStep, language }: ChatPanelProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([

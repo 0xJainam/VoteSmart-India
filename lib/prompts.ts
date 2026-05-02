@@ -74,7 +74,11 @@ You are an expert on election result procedures. Help with:
 
 /**
  * Builds the complete system prompt for the Gemini API call.
- * Combines the base persona + step-specific context + language instruction.
+ * Combines the base persona, step-specific context, and language instruction.
+ *
+ * @param stepId - The current active election step ID.
+ * @param language - The currently selected language. Defaults to "en".
+ * @returns The fully constructed system instruction string for Gemini.
  */
 export function getSystemPrompt(
   stepId: ElectionStepId,

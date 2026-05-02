@@ -5,7 +5,19 @@
 // This data is static and can be rendered by Server Components — zero client JS.
 // =============================================================================
 
-import type { ElectionStep, SupportedLanguage, QuizQuestion, ElectionStepId, TranslatedText } from "./types";
+import type { ElectionStep, SupportedLanguage, QuizQuestion, ElectionStepId, TranslatedText, Candidate } from "./types";
+
+/**
+ * Mock candidate data for the EVM Simulator.
+ * Moved from EVMSimulator.tsx to centralize configuration.
+ */
+export const CANDIDATES: Candidate[] = [
+  { id: 1, name: "Candidate A", party: "National Progress Party", symbol: "🌻" },
+  { id: 2, name: "Candidate B", party: "People's Democratic Front", symbol: "🔔" },
+  { id: 3, name: "Candidate C", party: "United Citizens Alliance", symbol: "⭐" },
+  { id: 4, name: "Candidate D", party: "Independent", symbol: "🏛️" },
+  { id: 5, name: "NOTA", party: "None of the Above", symbol: "✖️" },
+];
 
 /**
  * The 4-phase Indian election timeline.

@@ -22,7 +22,14 @@ function t(text: TranslatedText, lang: SupportedLanguage): string {
   return text[lang] || text.en;
 }
 
-/** Login overlay for unauthenticated users */
+/**
+ * LoginOverlay Component
+ *
+ * Provides a modal for users to either sign in with Google or continue as a guest.
+ * Prevents access to the dashboard until authentication is complete.
+ *
+ * @returns React node representing the login overlay.
+ */
 function LoginOverlay() {
   const { login } = useUser();
   const [name, setName] = useState("");
@@ -142,6 +149,14 @@ function LoginOverlay() {
   );
 }
 
+/**
+ * Dashboard Component
+ *
+ * The main application view. Manages the active election step, user progression,
+ * language preferences, and renders the timeline and interactive modules.
+ *
+ * @returns React node representing the main dashboard.
+ */
 export default function Dashboard() {
   const { user, isLoggedIn, awardBadge, addExp } = useUser();
   const [activeStep, setActiveStep] = useState<ElectionStepId>("registration");

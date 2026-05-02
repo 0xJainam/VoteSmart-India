@@ -15,6 +15,7 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
+import type { UserState } from "@/lib/types";
 
 /** Badge definitions */
 export const BADGE_DEFINITIONS: Record<string, { name: string; icon: string; desc: string }> = {
@@ -34,14 +35,6 @@ export function getLevel(exp: number): number {
 /** EXP needed for current level progress bar */
 export function getLevelProgress(exp: number): number {
   return exp % 100;
-}
-
-interface UserState {
-  name: string;
-  loginType: "guest" | "google";
-  exp: number;
-  badges: string[];
-  hasDigitalMark: boolean;
 }
 
 interface UserContextValue {

@@ -67,3 +67,20 @@ export interface GeminiResponse {
   checklist: string[];
 }
 
+/** User profile state for gamification and tracking */
+export interface UserState {
+  name: string;
+  loginType: "guest" | "google";
+  exp: number;
+  badges: string[];
+  hasDigitalMark: boolean;
+}
+
+/** EVM Simulator Candidate Data */
+export interface Candidate {
+  id: number;
+  name: string;
+  party: string;
+  symbol: string;
+}
+
